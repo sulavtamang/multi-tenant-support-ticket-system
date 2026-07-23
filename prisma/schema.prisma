@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Organization {
+  id String @id @default(uuid())
+  name String
+  agents Agent[]
+  tickets Ticket[]
+}
+
+enum AgentRole {
+  OWNER
+  MEMBER
+}
+
+model Agent {
+  id String @id @default(uuid())
+  name String
+  email String @unique
+  password String
+  role AgentRole @default(MEMBER)
+  organizationId String
+  orgnaization Organization @relation(fields: [organizationId], references: [id])
+  assignedTickets Ticket[]
+  comments Comment[]
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+model Ticket {
+  id String @id @default(uuid())
+  title String
+  description String
+  status TicketStatus @default(OPEN)
+  organizationId String
+  organization Organization @relation(fields: [organizationId], references: [id])
+  assignedAgent String?
+  agent Agent? @relation(fields: [assignedAgent], references: [id])
+  comments Comment[]
+  createdAt DateTime @default(now())
+}
+
+model Comment {
+  id String @id @default(uuid())
+  body String
+  ticketId String
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+  agentId String
+  agent Agent @relation(fields: [agentId], references: [id])
+  createdAt DateTime @default(now())
+
+}
