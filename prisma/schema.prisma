@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -9,9 +9,9 @@ datasource db {
 }
 
 model Organization {
-  id String @id @default(uuid())
-  name String
-  agents Agent[]
+  id      String   @id @default(uuid())
+  name    String
+  agents  Agent[]
   tickets Ticket[]
 }
 
@@ -21,15 +21,15 @@ enum AgentRole {
 }
 
 model Agent {
-  id String @id @default(uuid())
-  name String
-  email String @unique
-  password String
-  role AgentRole @default(MEMBER)
-  organizationId String
-  orgnaization Organization @relation(fields: [organizationId], references: [id])
+  id              String       @id @default(uuid())
+  name            String
+  email           String       @unique
+  password        String
+  role            AgentRole    @default(MEMBER)
+  organizationId  String
+  orgnaization    Organization @relation(fields: [organizationId], references: [id])
   assignedTickets Ticket[]
-  comments Comment[]
+  comments        Comment[]
 }
 
 enum TicketStatus {
@@ -39,25 +39,24 @@ enum TicketStatus {
 }
 
 model Ticket {
-  id String @id @default(uuid())
-  title String
-  description String
-  status TicketStatus @default(OPEN)
+  id             String       @id @default(uuid())
+  title          String
+  description    String
+  status         TicketStatus @default(OPEN)
   organizationId String
-  organization Organization @relation(fields: [organizationId], references: [id])
-  assignedAgent String?
-  agent Agent? @relation(fields: [assignedAgent], references: [id])
-  comments Comment[]
-  createdAt DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  assignedAgent  String?
+  agent          Agent?       @relation(fields: [assignedAgent], references: [id])
+  comments       Comment[]
+  createdAt      DateTime     @default(now())
 }
 
 model Comment {
-  id String @id @default(uuid())
-  body String
-  ticketId String
-  ticket Ticket @relation(fields: [ticketId], references: [id])
-  agentId String
-  agent Agent @relation(fields: [agentId], references: [id])
+  id        String   @id @default(uuid())
+  body      String
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  agentId   String
+  agent     Agent    @relation(fields: [agentId], references: [id])
   createdAt DateTime @default(now())
-
 }
