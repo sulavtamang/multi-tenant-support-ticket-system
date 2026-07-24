@@ -5,7 +5,7 @@ import { UserAccessTokenClaims } from 'src/auth/dto/auth-token-outpu.dto';
 import {
   REQUEST_ID_TOKEN_HEADER,
   FORWARDED_FOR_TOKEN_HEADER,
-} from 'src/shared/constants';
+} from '../constants';
 import { RequestContext } from '../dto/request-context.dto';
 
 export function createRequestContext(request: Request): RequestContext {
