@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ReqContext } from '../shared/request-context/request-context.decorator'
 import { RequestContext } from 'src/shared/request-context/dto/request-context.dto';
+import { FindTicketsQueryDto } from './dto/find-tickets-query.dto';
 
 @ApiTags('tickets')
 @ApiBearerAuth()
@@ -30,8 +32,8 @@ export class TicketsController {
   }
 
   @Get()
-  findAll(@ReqContext() ctx: RequestContext) {
-    return this.ticketsService.findAll(ctx);
+  findAll(@Query() query: FindTicketsQueryDto, @ReqContext() ctx: RequestContext) {
+    return this.ticketsService.findAll(ctx, query);
   }
 
   @Get(':id')

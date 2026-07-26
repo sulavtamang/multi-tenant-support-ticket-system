@@ -5,6 +5,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -14,6 +15,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ReqContext } from 'src/shared/request-context/request-context.decorator';
 import { RequestContext } from 'src/shared/request-context/dto/request-context.dto';
+import { FindCommentsQueryDto } from './dto/find-comments-query.dto';
 
 @ApiTags('comments')
 @ApiBearerAuth()
@@ -28,21 +30,15 @@ export class CommentsController {
     @Body() dto: CreateCommentDto,
     @ReqContext() ctx: RequestContext,
   ) {
-    return this.commentsService.create(
-      ticketId,
-      dto,
-      ctx
-    );
+    return this.commentsService.create(ticketId, dto, ctx);
   }
 
   @Get()
   findAll(
     @Param('ticketId', ParseUUIDPipe) ticketId: string,
-    @ReqContext() ctx: RequestContext
+    @Query() query: FindCommentsQueryDto,
+    @ReqContext() ctx: RequestContext,
   ) {
-    return this.commentsService.findAllForTicket(
-      ticketId,
-      ctx
-    );
+    return this.commentsService.findAllForTicket(ticketId, ctx, query);
   }
 }
