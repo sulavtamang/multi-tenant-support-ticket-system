@@ -1,9 +1,23 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketStatusDto } from './dto/update-ticket-status.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ReqContext } from '../shared/request-context/request-context.decorator'
+import { RequestContext } from 'src/shared/request-context/dto/request-context.dto';
+import { FindTicketsQueryDto } from './dto/find-tickets-query.dto';
 
 @ApiTags('tickets')
 @ApiBearerAuth()
@@ -13,28 +27,40 @@ export class TicketsController {
   constructor(private ticketsService: TicketsService) {}
 
   @Post()
-  create(@Body() dto: CreateTicketDto, @Req() req) {
-    return this.ticketsService.create(dto, req.user.organizationId);
+  create(@Body() dto: CreateTicketDto, @ReqContext() ctx: RequestContext) {
+    return this.ticketsService.create(dto, ctx);
   }
 
   @Get()
-  findAll(@Req() req) {
-    return this.ticketsService.findAll(req.user.organizationId);
+  findAll(@Query() query: FindTicketsQueryDto, @ReqContext() ctx: RequestContext) {
+    return this.ticketsService.findAll(ctx, query);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req) {
-    return this.ticketsService.findOne(id, req.user.organizationId);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @ReqContext() ctx: RequestContext) {
+    return this.ticketsService.findOne(id, ctx);
   }
 
   @Patch(':id/status')
-  updateStatus(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateTicketStatusDto, @Req() req) {
-    return this.ticketsService.updateStatus(id, dto, req.user.organizationId);
+  updateStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateTicketStatusDto,
+    @ReqContext() ctx: RequestContext,
+  ) {
+    return this.ticketsService.updateStatus(id, dto, ctx);
   }
 
   @Patch(':id/assign/:agentId')
-  assignAgent(@Param('id', ParseUUIDPipe) id: string, @Param('agentId', ParseUUIDPipe) agentId: string, @Req() req) {
-    return this.ticketsService.assignAgent(id, agentId, req.user.organizationId);
+  assignAgent(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('agentId', ParseUUIDPipe) agentId: string,
+    @ReqContext() ctx: RequestContext,
+  ) {
+    return this.ticketsService.assignAgent(
+      id,
+      agentId,
+      ctx,
+    );
   }
 }
 

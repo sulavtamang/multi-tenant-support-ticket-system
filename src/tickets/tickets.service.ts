@@ -2,37 +2,65 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketStatusDto } from './dto/update-ticket-status.dto';
+import { RequestContext } from 'src/shared/request-context/dto/request-context.dto';
+import { FindTicketsQueryDto } from './dto/find-tickets-query.dto';
 
 @Injectable()
 export class TicketsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(dto: CreateTicketDto, organizationId: string) {
+  async create(dto: CreateTicketDto, ctx: RequestContext) {
     return this.prisma.ticket.create({
-      data: { title: dto.title, description: dto.description, organizationId },
-    });
-  }
-
-  async findAll(organizationId: string) {
-    return this.prisma.ticket.findMany({
-      where: { organizationId },
-      select: {
-        id: true,
-        title: true,
-        status: true,
-        createdAt: true,
-        agent: {
-          select: { id: true, name: true, email: true }, // never leak password
-        },
+      data: {
+        title: dto.title,
+        description: dto.description,
+        organizationId: ctx.organizationId,
       },
     });
   }
 
+  async findAll(ctx: RequestContext, query: FindTicketsQueryDto) {
+    const { page, limit, status, assignedAgent } = query;
+    const skip = (page - 1) * limit;
+
+    const where = {
+      organizationId: ctx.organizationId,
+      ...(status && { status }),
+      ...(assignedAgent && { assignedAgent }),
+    };
+
+    const [tickets, total] = await this.prisma.$transaction([
+      this.prisma.ticket.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          createdAt: true,
+          agent: { select: { id: true, name: true, email: true } }, // never leak password,
+        },
+      }),
+      this.prisma.ticket.count({ where }),
+    ]);
+    return {
+      data: tickets,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),   
+      },
+    };
+  }
+
   // tenant-safe findOne: scoped by BOTH id and organizationId,
   // so a ticket from another org simply doesn't exist from this org's perspective
-  async findOne(id: string, organizationId: string) {
+  async findOne(id: string, ctx: RequestContext) {
     const ticket = await this.prisma.ticket.findFirst({
-      where: { id, organizationId },
+      where: { id, organizationId: ctx.organizationId },
       select: {
         id: true,
         title: true,
@@ -60,7 +88,7 @@ export class TicketsService {
   async updateStatus(
     id: string,
     dto: UpdateTicketStatusDto,
-    organizationId: string,
+    organizationId: RequestContext,
   ) {
     await this.findOne(id, organizationId); // throws 404 if not in this org
     return this.prisma.ticket.update({
@@ -69,7 +97,11 @@ export class TicketsService {
     });
   }
 
-  async assignAgent(id: string, agentId: string, organizationId: string) {
+  async assignAgent(
+    id: string,
+    agentId: string,
+    organizationId: RequestContext,
+  ) {
     await this.findOne(id, organizationId);
     return this.prisma.ticket.update({
       where: { id },

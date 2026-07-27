@@ -1,10 +1,13 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AgentsService } from './agents.service';
 import { CreateAgentDto } from './dto/create-agent.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { RequestContext } from 'src/shared/request-context/dto/request-context.dto';
+import { ReqContext } from 'src/shared/request-context/request-context.decorator';
+import { FindAgentsQueryDto } from './dto/find-agents-query.dto';
 
 @ApiTags('agents')
 @ApiBearerAuth()
@@ -15,13 +18,13 @@ export class AgentsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER')
   @Post()
-  create(@Body() dto: CreateAgentDto, @Req() req) {
-    return this.agentsService.create(dto, req.user.organizationId);
+  create(@ReqContext() ctx: RequestContext, @Body() dto: CreateAgentDto) {
+    return this.agentsService.create(ctx, dto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  findAll(@Req() req) {
-    return this.agentsService.findAll(req.user.organizationId);
+  findAll(@Query() query: FindAgentsQueryDto, @ReqContext() ctx: RequestContext) {
+    return this.agentsService.findAll(ctx, query);
   }
 }
