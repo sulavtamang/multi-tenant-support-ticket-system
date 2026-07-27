@@ -4,22 +4,33 @@ import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketStatusDto } from './dto/update-ticket-status.dto';
 import { RequestContext } from 'src/shared/request-context/dto/request-context.dto';
 import { FindTicketsQueryDto } from './dto/find-tickets-query.dto';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class TicketsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @InjectPinoLogger(TicketsService.name) private readonly logger: PinoLogger,
+  ) {}
 
   async create(dto: CreateTicketDto, ctx: RequestContext) {
-    return this.prisma.ticket.create({
+    this.logger.info({ organizationId: ctx.organizationId }, 'Creating new ticket');
+    const ticket = await this.prisma.ticket.create({
       data: {
         title: dto.title,
         description: dto.description,
         organizationId: ctx.organizationId,
       },
     });
+    this.logger.info({ ticketId: ticket.id }, 'Ticket created');
+    return ticket;
   }
 
   async findAll(ctx: RequestContext, query: FindTicketsQueryDto) {
+    this.logger.debug(
+      { organizationId: ctx.organizationId },
+      'Fetching tickets for organization',
+    );
     const { page, limit, status, assignedAgent } = query;
     const skip = (page - 1) * limit;
 
@@ -51,7 +62,7 @@ export class TicketsService {
         total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit),   
+        totalPages: Math.ceil(total / limit),
       },
     };
   }
@@ -88,21 +99,17 @@ export class TicketsService {
   async updateStatus(
     id: string,
     dto: UpdateTicketStatusDto,
-    organizationId: RequestContext,
+    ctx: RequestContext,
   ) {
-    await this.findOne(id, organizationId); // throws 404 if not in this org
+    await this.findOne(id, ctx); // throws 404 if not in this org
     return this.prisma.ticket.update({
       where: { id },
       data: { status: dto.status },
     });
   }
 
-  async assignAgent(
-    id: string,
-    agentId: string,
-    organizationId: RequestContext,
-  ) {
-    await this.findOne(id, organizationId);
+  async assignAgent(id: string, agentId: string, ctx: RequestContext) {
+    await this.findOne(id, ctx);
     return this.prisma.ticket.update({
       where: { id },
       data: { assignedAgent: agentId },

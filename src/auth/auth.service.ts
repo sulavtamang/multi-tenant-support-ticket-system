@@ -4,16 +4,22 @@ import { RegisterOrganizationDto } from './dto/register-organization.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login-dto';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    @InjectPinoLogger(AuthService.name) private readonly logger: PinoLogger,
   ) {}
 
   // POST /auth/register-organization
   async registerOrganization(dto: RegisterOrganizationDto) {
+    this.logger.info(
+      { organizationName: dto.organizationName, email: dto.email },
+      'Registering organization',
+    );
     return this.prisma.$transaction(async (tx) => {
       const organization = await tx.organization.create({
         data: { name: dto.organizationName },
@@ -36,10 +42,12 @@ export class AuthService {
 
   //POST /auth/login
   async login(dto: LoginDto) {
+    this.logger.debug({ email: dto.email }, 'Login attempt');
     const agent = await this.prisma.agent.findUnique({
       where: { email: dto.email },
     });
     if (!agent || !(await bcrypt.compare(dto.password, agent.password))) {
+      this.logger.warn({ email: dto.email }, 'Invalid login attempt');
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -48,7 +56,12 @@ export class AuthService {
       organizationId: agent.organizationId, // pulled from the DB row, not from the client
       role: agent.role,
     };
-    return { access_token: await this.jwtService.signAsync(payload) };
+    const token = await this.jwtService.signAsync(payload);
+    this.logger.info(
+      { agentId: agent.id, organizationId: agent.organizationId },
+      'Login successful',
+    );
+    return { access_token: token };
   }
 }
 

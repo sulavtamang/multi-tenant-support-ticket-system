@@ -6,7 +6,6 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import { CommentsService } from './comments.service';
@@ -16,13 +15,18 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ReqContext } from 'src/shared/request-context/request-context.decorator';
 import { RequestContext } from 'src/shared/request-context/dto/request-context.dto';
 import { FindCommentsQueryDto } from './dto/find-comments-query.dto';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @ApiTags('comments')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('tickets/:ticketId/comments')
 export class CommentsController {
-  constructor(private commentsService: CommentsService) {}
+  constructor(
+    private commentsService: CommentsService,
+    @InjectPinoLogger(CommentsController.name)
+    private readonly logger: PinoLogger,
+  ) {}
 
   @Post()
   create(
@@ -30,6 +34,14 @@ export class CommentsController {
     @Body() dto: CreateCommentDto,
     @ReqContext() ctx: RequestContext,
   ) {
+    this.logger.info(
+      {
+        ticketId,
+        organizationId: ctx.organizationId,
+        agentId: ctx.user?.agentId,
+      },
+      'Create comment request',
+    );
     return this.commentsService.create(ticketId, dto, ctx);
   }
 
@@ -39,6 +51,10 @@ export class CommentsController {
     @Query() query: FindCommentsQueryDto,
     @ReqContext() ctx: RequestContext,
   ) {
+    this.logger.debug(
+      { ticketId, organizationId: ctx.organizationId },
+      'List comments request',
+    );
     return this.commentsService.findAllForTicket(ticketId, ctx, query);
   }
 }

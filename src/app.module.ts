@@ -9,9 +9,21 @@ import { TicketsModule } from './tickets/tickets.module';
 import { CommentsModule } from './comments/comments.module';
 import { SharedModule } from './shared/shared.module';
 import * as Joi from 'joi';
+import { LoggerModule } from 'nestjs-pino';
 
 @Module({
   imports: [
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+        transport: process.env.NODE_ENV !== 'production' ? { target: 'pino-pretty', options: { colorize: true, singleLine: true }} : undefined,
+        genReqId: (req) => req.headers['x-request-id'] || crypto.randomUUID(),
+        customProps: (req: any) => ({
+          organizationId: req.user?.organizationId,
+          agentId: req.user?.agentId,
+        }),
+      },
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({

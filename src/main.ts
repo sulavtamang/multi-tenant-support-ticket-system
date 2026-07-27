@@ -8,7 +8,9 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
   const config = new DocumentBuilder()
     .setTitle('Multi-Tenant Support Ticket System')
-    .setDescription('A multi-tenant ticketing API with JWT auth and role-based access')
+    .setDescription(
+      'A multi-tenant ticketing API with JWT auth and role-based access',
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .build();
